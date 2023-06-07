@@ -1,7 +1,7 @@
 lr = 0.0001
 decay = 0.0001
 latent_space = 130
-batch_size = 16
+batch_size = 64
 input_shape = (208, 160, 1)
 filters = 32
 age_dim = 100
@@ -13,4 +13,4 @@ use_cuda = True
 gp_weight = 10
 epochs = 600
 
-data_root = "/mnt/d/camcan/np_data/original/"
+data_root = "../data/original/"

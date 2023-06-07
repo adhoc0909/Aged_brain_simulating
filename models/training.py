@@ -125,6 +125,8 @@ class Synthesized_model():
 
     def _train_epoch(self, data_loader):
         for i, data in enumerate(data_loader):
+            if data[3].shape[0]!=self.batch_size:
+                continue
             self.num_steps += 1
             self._critic_train_iteration(data[0], data[1], data[2], data[3])
 
@@ -148,7 +150,7 @@ class Synthesized_model():
             training_progress_images  = []
             paired_list = pd.read_csv('./paired_image_files.csv')
             paired_set_info = paired_list.loc[random.randint(0, len(paired_list))]
-            data_root = "/mnt/d/camcan/np_data/original/" # 이거 config에서 가져오는 걸로 바꿔야됨
+            data_root = "../data/original/" # 이거 config에서 가져오는 걸로 바꿔야됨
             young_file_path = data_root + paired_set_info['young_filename']
 
         for ep in range(self.epochs):
@@ -157,7 +159,7 @@ class Synthesized_model():
 
             if save_training_gif:
                 data_loader_for_gif = data_loader
-                img_grid = make_grid(self.G(torch.from_numpy(np.expand_dims(np.load(young_file_path), axis=0))))
+                img_grid = make_grid(self.G(torch.from_numpy(np.expand_dims(np.load(young_file_path), axis=0)), old_age))
                 img_grid = np.transpose(img_grid.numpy(), (1,2,0))
                 training_progress_images.append(img_grid)
 

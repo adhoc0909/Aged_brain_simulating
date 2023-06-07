@@ -45,3 +45,5 @@ class Dataset(torch.utils.data.Dataset):
 # data = next(iter(dataloader))
 # print(data[3].shape)
 # print(data[3].dtype)
+
+print(torch.cuda.is_available())
