@@ -167,9 +167,9 @@ class Synthesized_model():
                 print("D: {}".format(self.losses['D'][-1]))
                 print("GP: {}".format(self.losses['GP'][-1]))
                 print("Gradient norm: {}".format(self.losses['gradient_norm'][-1]))
-                print("self_rec: {}".format(self.losses['self_rec'][-1]))
                 print("id_loss: {}".format(self.losses['id_loss'][-1]))
                 if self.num_steps > self.critic_iter:
+                    print("self_rec: {}".format(self.losses['self_rec'][-1]))
                     print("G: {}".format(self.losses['G'][-1]))
 
     def train(self, data_loader, epochs, save_training_gif = True):
