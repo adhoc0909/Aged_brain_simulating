@@ -41,7 +41,7 @@ class Synthesized_model():
             self.G.cuda()
             self.D.cuda() # 잘 됐는지 확인할 것
 
-        self.losses = {'G': [], 'D': [], 'GP': [], 'gradient_norm': []}
+        self.losses = {'G': [], 'D': [], 'GP': [], 'gradient_norm': [], 'self_rec': [], 'id_loss': []}
 
     def _critic_train_iteration(self, young_data, old_data, young_age, old_age):
         age_gap = get_age_gap(old_age, young_age)
@@ -74,14 +74,15 @@ class Synthesized_model():
 
         id_loss = identity_loss(young_data, gen_old, age_gap)
 
-        gen_zero = self.sample_generator(young_data, )
+      
         
         d_loss = d_generated.mean() - d_real.mean() + self.conf.gp_weight*gradient_penalty + self.conf.id_weight*id_loss
         d_loss.backward()
 
         self.d_optimizer.step()
 
-        self.losses['D'].append(d_loss.item())
+        self.losses['D'].append((d_generated.mean() - d_real.mean() + self.conf.gp_weight*gradient_penalty).item())
+        self.losses['id_loss'].append(id_loss.item())
 
     def _generator_train_iteration(self, young_data, young_age, old_age):
         self.g_optimizer.zero_grad()
@@ -103,13 +104,14 @@ class Synthesized_model():
 
         gen_old = self.sample_generator(young_data, age_gap)
         d_generated = self.D(gen_old, old_age)
-
-        self_rec = self_rec_loss(young_data, zero_gap)
+        gen_zero = self.sample_generator(young_data, zero_gap)
+        self_rec = self_rec_loss(young_data, gen_zero)
         g_loss = - d_generated.mean() + self.conf.self_rec_weight*self_rec
         g_loss.backward()
         self.g_optimizer.step()
 
-        self.losses['G'].append(g_loss.item())
+        self.losses['G'].append((- d_generated.mean()).item())
+        self.losses['self_rec'].append(self_rec.item())
 
     def _gradient_penalty(self, real_data, generated_data, old_age):
         batch_size = self.batch_size
