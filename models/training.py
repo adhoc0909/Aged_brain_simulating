@@ -9,19 +9,26 @@ from torchvision import utils
 from torch.autograd import Variable
 from torch.autograd import grad as torch_grad
 from torchvision.utils import make_grid
+from utils.data_loader import age2ord_vector
+from utils.cost import identity_loss, self_rec_loss
+import numpy as np
+import os
 
+
+def get_age_gap(old_batch, young_batch):
+    return torch.from_numpy(np.array(list(map(age2ord_vector, (old_batch - young_batch).sum(axis = 1).type('torch.ByteTensor')))))
 
 class Synthesized_model():
     def __init__(self, conf):
         self.G = Generator(conf)
         self.D = Discriminator(conf)
-
+        self.conf = conf
         self.learning_rate = conf.lr
         self.batch_size = conf.batch_size
         self.b1 = conf.beta_1 # 원본 코드에서 0으로 설정되어 있는데 확인해볼 것
         self.b2 = conf.beta_2
         self.d_optimizer = optim.Adam(self.D.parameters(), lr=self.learning_rate, betas=(self.b1, self.b2), weight_decay = conf.decay)
-        self.g_optimizer = optim.Adam(self.G.parameters(), lr=self.learning_rate, betas=(self.b1, self.b2), weight_decay=conf.decay)
+        self.g_optimizer = optim.Adam(self.G.parameters(), lr=self.learning_rate, betas=(self.b1, self.b2), weight_decay = conf.decay)
 
         self.critic_iter = conf.critic_iter
         self.gp_weight = conf.gp_weight
@@ -37,28 +44,39 @@ class Synthesized_model():
         self.losses = {'G': [], 'D': [], 'GP': [], 'gradient_norm': []}
 
     def _critic_train_iteration(self, young_data, old_data, young_age, old_age):
-
+        age_gap = get_age_gap(old_age, young_age)
+        
         batch_size = self.batch_size
         young_data = Variable(young_data)
         old_data = Variable(old_data)
         young_age = Variable(young_age)
         old_age = Variable(old_age)
+        age_gap = Variable(age_gap)
+        
         if self.use_cuda:
             young_data = young_data.cuda()
             old_data = old_data.cuda()
             young_age = young_age.cuda()
             old_age = old_age.cuda()
+            age_gap = age_gap.cuda()
+            
 
         d_real = self.D(old_data, old_age)
 
-        generated_data = self.sample_generator(young_data, young_age)
-        d_generated = self.D(generated_data, old_age) # 이거 target로 변경하는 거 해야됨
+        
+        gen_old = self.sample_generator(young_data, age_gap)
+        d_generated = self.D(gen_old, old_age) 
 
-        gradient_penalty = self._gradient_penalty(old_data, generated_data, old_age)
+        gradient_penalty = self._gradient_penalty(old_data, gen_old, old_age)
         self.losses['GP'].append(gradient_penalty.item())
 
         self.d_optimizer.zero_grad()
-        d_loss = d_generated.mean() - d_real.mean() + gradient_penalty
+
+        id_loss = identity_loss(young_data, gen_old, age_gap)
+
+        gen_zero = self.sample_generator(young_data, )
+        
+        d_loss = d_generated.mean() - d_real.mean() + self.conf.gp_weight*gradient_penalty + self.conf.id_weight*id_loss
         d_loss.backward()
 
         self.d_optimizer.step()
@@ -68,17 +86,26 @@ class Synthesized_model():
     def _generator_train_iteration(self, young_data, young_age, old_age):
         self.g_optimizer.zero_grad()
         batch_size = self.batch_size
-
+        age_gap = get_age_gap(old_age, young_age)
+        zero_gap = get_age_gap(young_age, young_age)
         young_data = Variable(young_data)
         young_age = Variable(young_age)
         old_age = Variable(old_age)
+        age_gap = Variable(age_gap)
+        zero_gap = Variable(zero_gap)
+
         if self.use_cuda:
             young_data = young_data.cuda()
             young_age = young_age.cuda()
             old_age = old_age.cuda()
-        generated_data = self.sample_generator(young_data, young_age)
-        d_generated = self.D(generated_data, old_age)
-        g_loss = - d_generated.mean()
+            age_gap = age_gap.cuda()
+            zero_gap = zero_gap.cuda()
+
+        gen_old = self.sample_generator(young_data, age_gap)
+        d_generated = self.D(gen_old, old_age)
+
+        self_rec = self_rec_loss(young_data, zero_gap)
+        g_loss = - d_generated.mean() + self.conf.self_rec_weight*self_rec
         g_loss.backward()
         self.g_optimizer.step()
 
@@ -148,31 +175,43 @@ class Synthesized_model():
             import numpy as np
             import imageio
             training_progress_images  = []
-            paired_list = pd.read_csv('./paired_image_files.csv')
-            paired_set_info = paired_list.loc[random.randint(0, len(paired_list))]
-            data_root = "../data/original/" # 이거 config에서 가져오는 걸로 바꿔야됨
-            young_file_path = data_root + paired_set_info['young_filename']
+
+        if not os.path.isdir(self.conf.model_save_path):
+            os.makedirs(self.conf.model_save_path, exist_ok=True)
+            
 
         for ep in range(self.epochs):
             print("\nEpoch {}".format(ep + 1))
             self._train_epoch(data_loader)
+            
+            
+            if save_training_gif:
+                data =  next(iter(data_loader))
+                age_gap = get_age_gap(data[3], data[2])
+                if self.use_cuda:
+                    
+                    test_data = self.G(data[0].cuda(),age_gap.cuda()).cpu() + data[0] # mask + young data
+                    
+                    img_grid = make_grid(test_data)
+                else:
+                    img_grid = make_grid(self.G(data[0],age_gap))  + data[0]
+                
+                img_grid = np.transpose(img_grid.cpu().numpy(), (1,2,0))
+                training_progress_images.append(img_grid.astype(np.uint8))
 
             if save_training_gif:
-                data_loader_for_gif = data_loader
-                img_grid = make_grid(self.G(torch.from_numpy(np.expand_dims(np.load(young_file_path), axis=0)), old_age))
-                img_grid = np.transpose(img_grid.numpy(), (1,2,0))
-                training_progress_images.append(img_grid)
-
-            if save_training_gif:
-                imageio.mimsave('./reuslt_example/training_{}_epochs.gif'.format(epochs),
+                imageio.mimsave('./result_example/training_{}_epochs.gif'.format(epochs),
                                 training_progress_images)
 
-    def sample_generator(self, young_data, young_age):
-        generated_data = self.G(young_data, young_age)
+            if (ep+1) % 30 == 0:
+                
+                torch.save(self.G.state_dict(), self.conf.model_save_path + 'G_model_{}epochs.pt'.format(ep+1))
+                torch.save(self.D.state_dict(), self.conf.model_save_path + 'D_model_{}epochs.pt'.format(ep+1))
+
+    def sample_generator(self, young_data, age_gap):
+        generated_data = young_data + self.G(young_data, age_gap)
         return generated_data
 
-    def sample(self, young_data, young_age):
-        generated_data = self.sample_generator(young_data, young_age)
+    def sample(self, young_data, age_gap):
+        generated_data = self.sample_generator(young_data, age_gap)
         return generated_data.data.cpu().numpy()[:, 0, :, :]
-
-

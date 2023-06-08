@@ -5,8 +5,9 @@ from models.training import Synthesized_model
 
 
 
-dataset = Dataset('./paired_image_files.csv', experiment_params.data_root)
+dataset = Dataset(experiment_params.paired_list_csv, experiment_params.data_root)
 dataloader = torch.utils.data.DataLoader(dataset, batch_size = experiment_params.batch_size, shuffle = True)
+print("batch size: ", experiment_params.batch_size)
 
 
 model = Synthesized_model(experiment_params)
