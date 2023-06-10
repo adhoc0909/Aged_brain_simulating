@@ -8,5 +8,5 @@ def identity_loss(X_yng, pred_old, age_gap, age_range = 100):
 
     return l1_loss.mean()
 
-def self_rec_loss(X_yng, pred_old):
-    return torch.abs(X_yng - pred_old).mean()
+def self_rec_loss(X_yng, pred_zero):
+    return torch.abs(X_yng - pred_zero).mean()
