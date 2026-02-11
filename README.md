@@ -1,8 +1,8 @@
 # Brain Aging Simulation
 
-PyTorch implementation of **"Learning to synthesise the ageing brain without longitudinal data"** (MICCAI 2019)
+PyTorch implementation of **"Learning to synthesise the ageing brain without longitudinal data"** (Medical Image Analysis, 2021)
 
-[![Paper](https://img.shields.io/badge/Paper-arXiv-red)](https://arxiv.org/abs/1912.02620)
+[![Paper](https://img.shields.io/badge/Paper-MedIA-blue)](https://www.sciencedirect.com/science/article/abs/pii/S1361841521002152)
 [![PyTorch](https://img.shields.io/badge/PyTorch-1.12+-orange)](https://pytorch.org/)
 
 ## Overview
@@ -133,11 +133,14 @@ brain-aging-simulation/
 ## References
 
 ```bibtex
-@inproceedings{xia2019learning,
+@article{xia2021learning,
   title={Learning to synthesise the ageing brain without longitudinal data},
-  author={Xia, Tian and Chartsias, Agisilaos and Tsaftaris, Sotirios A},
-  booktitle={Medical Image Computing and Computer Assisted Intervention},
-  year={2019}
+  author={Xia, Tian and Chartsias, Agisilaos and Tsaftaris, Sotirios A and others},
+  journal={Medical Image Analysis},
+  volume={73},
+  pages={102169},
+  year={2021},
+  publisher={Elsevier}
 }
 ```
 

@@ -1,17 +1,15 @@
-from models.generator import Generator
-from models.discriminator import Discriminator
+import os
+
+import numpy as np
 import torch
 import torch.optim as optim
-from torch import autograd
-import time as t
-import os
-from torchvision import utils
-from torch.autograd import Variable
-from torch.autograd import grad as torch_grad
+from torch.autograd import Variable, grad as torch_grad
 from torchvision.utils import make_grid
+
+from models.generator import Generator
+from models.discriminator import Discriminator
 from utils.data_loader import age2ord_vector
 from utils.cost import identity_loss, self_rec_loss
-import numpy as np
 
 
 def get_age_gap(old_batch, young_batch):
@@ -44,8 +42,7 @@ class Synthesized_model():
 
     def _critic_train_iteration(self, young_data, old_data, young_age, old_age):
         age_gap = get_age_gap(old_age, young_age)
-        
-        batch_size = self.batch_size
+
         young_data = Variable(young_data)
         old_data = Variable(old_data)
         young_age = Variable(young_age)
@@ -85,7 +82,6 @@ class Synthesized_model():
 
     def _generator_train_iteration(self, young_data, young_age, old_age):
         self.g_optimizer.zero_grad()
-        batch_size = self.batch_size
         age_gap = get_age_gap(old_age, young_age)
         zero_gap = get_age_gap(young_age, young_age)
         young_data = Variable(young_data)
@@ -171,13 +167,10 @@ class Synthesized_model():
                     print("self_rec: {}".format(self.losses['self_rec'][-1]))
                     print("G: {}".format(self.losses['G'][-1]))
 
-    def train(self, data_loader, epochs, save_training_gif = True):
+    def train(self, data_loader, epochs, save_training_gif=True):
         if save_training_gif:
-            import pandas as pd
-            import random
-            import numpy as np
             import imageio
-            training_progress_images  = []
+            training_progress_images = []
 
         if not os.path.isdir(self.conf.model_save_path):
             os.makedirs(self.conf.model_save_path, exist_ok=True)
