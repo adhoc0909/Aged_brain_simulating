@@ -1,17 +1,44 @@
-from utils.data_loader import Dataset
+"""
+Brain Aging Simulation - Main Training Script
+
+PyTorch implementation of "Learning to synthesise the ageing brain without longitudinal data"
+Paper: https://arxiv.org/abs/1912.02620
+"""
+
 import torch
-from configurations import experiment_params
+from configurations.config import parse_args
+from utils.data_loader import Dataset
 from models.training import Synthesized_model
 
 
+def main():
+    # Parse command line arguments
+    config = parse_args()
 
-dataset = Dataset(experiment_params.paired_list_csv, experiment_params.data_root)
-dataloader = torch.utils.data.DataLoader(dataset, batch_size = experiment_params.batch_size, shuffle = True)
-print("batch size: ", experiment_params.batch_size)
+    # Print configuration
+    print("=" * 50)
+    print("Brain Aging Simulation - Training")
+    print("=" * 50)
+    print(f"Batch size: {config.batch_size}")
+    print(f"Epochs: {config.epochs}")
+    print(f"Learning rate: {config.lr}")
+    print(f"CUDA enabled: {config.use_cuda}")
+    print(f"Data root: {config.data_root}")
+    print(f"Paired list CSV: {config.paired_list_csv}")
+    print("=" * 50)
+
+    # Setup dataset and dataloader
+    dataset = Dataset(config.paired_list_csv, config.data_root)
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=config.batch_size,
+        shuffle=True
+    )
+
+    # Initialize and train model
+    model = Synthesized_model(config)
+    model.train(dataloader, config.epochs)
 
 
-model = Synthesized_model(experiment_params)
-model.train(dataloader, experiment_params.epochs)
-
-# for i, data in enumerate(dataloader):
-#     print(i, data[0].shape, data[1].shape, data[2].shape, data[3].shape)
+if __name__ == "__main__":
+    main()

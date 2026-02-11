@@ -37,13 +37,3 @@ class Dataset(torch.utils.data.Dataset):
         old_file = np.expand_dims(np.load(old_file_path), axis=0)
 
         return young_file[:,5:213, 11:171], old_file[:,5:213, 11:171], young_age, old_age
-
-
-
-# dataset = Dataset('../paired_image_files_test.csv', "../../data/test/")
-# dataloader = torch.utils.data.DataLoader(dataset, batch_size = 16, shuffle = True)
-# data = next(iter(dataloader))
-# print(data[0].shape)
-# print(data[3].dtype)
-
-#print(torch.cuda.is_available())

@@ -12,7 +12,6 @@ from torchvision.utils import make_grid
 from utils.data_loader import age2ord_vector
 from utils.cost import identity_loss, self_rec_loss
 import numpy as np
-import os
 
 
 def get_age_gap(old_batch, young_batch):

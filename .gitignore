@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Data & Models
+data/
+*.npy
+*.pt
+*.pkl
+*.pth
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Results
+result/
+result_example/
+training_result_images/
+interpolated_images/
+logs/
+*.gif
+
+# Environment
+.env
+venv/
+*.csv
+
+# Misc
+*.txt
+!requirements.txt
